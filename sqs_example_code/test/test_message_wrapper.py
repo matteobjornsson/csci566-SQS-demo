@@ -35,6 +35,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 import message_wrapper
+import common
 
 
 @pytest.mark.parametrize("body,attributes", [

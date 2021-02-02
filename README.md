@@ -56,7 +56,7 @@ aws_secret_access_key = YOUR_SECRET_KEY
 Additionally, you will want to configure your region:
 
 ```bash
-vim .aws/config
+vim ~/.aws/config
 ```
 Which should look like this: 
 ```

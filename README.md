@@ -7,7 +7,6 @@ Get your wireless interface
 ```bash
 ifconfig
 ```
-Mine is `wlp3s0`
 
 Connect your virtualbox to your wireless interface. Click the settings cog on your virtualbox manager.
 

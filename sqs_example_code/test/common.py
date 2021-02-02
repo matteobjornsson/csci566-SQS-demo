@@ -2,272 +2,207 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Purpose
-    Unit tests for queue_wrapper.py functions.
-
-Running the tests
-    Tests can be run in two modes. By default, the tests use the botocore Stubber.
-    This captures requests before they are sent to AWS and returns a mocked response.
-    You can also run the tests against your AWS account. In this case, they will
-    create and manipulate AWS resources, which may incur charges on your account.
-
-    To run the tests for this module with the botocore Stubber, run the following in
-    your <GitHub root>/python/example_code/sqs folder.
-
-        python -m pytest -o log_cli=1 --log-cli-level=INFO test/test_queue_wrapper.py
-
-    The '-o log_cli=1 --log-cli-level=INFO' flags configure pytest to output
-    logs to stdout during the test run. Without them, pytest captures logs and prints
-    them only when the test fails.
-
-    To run the tests using your AWS account and default shared credentials, include the
-    '--use-real-aws-may-incur-charges' flag.
-
-        python -m pytest -o log_cli=1 --log-cli-level=INFO --use-real-aws-may-incur-charges test/test_queue_wrapper.py
-
-    Note that this may incur charges to your AWS account. When run in this mode,
-    a best effort is made to clean up any resources created during the test. But it's
-    your responsibility to verify that all resources have actually been cleaned up.
+Common test fixtures that can be used throughout the unit tests for all Python
+code examples.
 """
 
-import json
+import contextlib
 import time
 import pytest
 
-from botocore.exceptions import ClientError
-
-import queue_wrapper
+from test_tools.stubber_factory import stubber_factory
 
 
-@pytest.mark.parametrize("attributes", [
-    ({}),
-    ({
-        'MaximumMessageSize': str(4096),
-        'ReceiveMessageWaitTimeSeconds': str(10),
-        'VisibilityTimeout': str(300)
-    })
-])
-def test_create_standard_queue(make_stubber, make_unique_name, attributes):
-    """Test that creating a standard queue returns a queue with the expected
-     form of URL."""
-    sqs_stubber = make_stubber(queue_wrapper.sqs.meta.client)
-    queue_name = make_unique_name('queue')
-    url = 'url-' + queue_name
-
-    sqs_stubber.stub_create_queue(queue_name, attributes, url)
-
-    queue = queue_wrapper.create_queue(queue_name, attributes)
-    assert queue_name in queue.url
-
-    if not sqs_stubber.use_stubs:
-        queue_wrapper.remove_queue(queue)
+def pytest_addoption(parser):
+    """Add an option to run tests against an actual AWS account instead of
+    the Stubber."""
+    parser.addoption(
+        "--use-real-aws-may-incur-charges", action="store_true", default=False,
+        help="Connect to real AWS services while testing. **Warning: this might incur "
+             "charges on your account!**"
+    )
 
 
-@pytest.mark.parametrize("attributes", [
-    ({}),
-    ({
-        'MaximumMessageSize': str(1024),
-        'ReceiveMessageWaitTimeSeconds': str(20)
-    })
-])
-def test_create_fifo_queue(make_stubber, make_unique_name, attributes):
-    """Test that creating a FIFO queue returns a queue with the expected form of URL."""
-    sqs_stubber = make_stubber(queue_wrapper.sqs.meta.client)
-    # FIFO queues require a '.fifo' suffix on the queue name.
-    queue_name = make_unique_name('queue') + '.fifo'
-    attributes['FifoQueue'] = str(True)
-    url = 'url-' + queue_name
-
-    sqs_stubber.stub_create_queue(queue_name, attributes, url)
-
-    queue = queue_wrapper.create_queue(queue_name, attributes)
-    assert queue.url.endswith(queue_name)
-
-    if not sqs_stubber.use_stubs:
-        queue_wrapper.remove_queue(queue)
+def pytest_configure(config):
+    """Register the skip_if_real_aws marker with Pytest."""
+    config.addinivalue_line(
+        "markers", "skip_if_real_aws: mark test to run only when stubbed."
+    )
 
 
-def test_create_dead_letter_queue(make_stubber, make_unique_name):
+def pytest_runtest_setup(item):
+    """Handle the custom marker skip_if_real_aws, which skips a test when it is
+    run against actual AWS services."""
+    skip_if_real_aws = 'skip_if_real_aws' in [m.name for m in item.iter_markers()]
+    if skip_if_real_aws:
+        if item.config.getoption("--use-real-aws-may-incur-charges"):
+            pytest.skip("When run with actual AWS services instead of stub functions, "
+                        "this test will fail because it uses test data. To run this "
+                        "test with AWS services, you must first substitute actual "
+                        "data, such as user IDs, for test data.")
+
+
+@pytest.fixture(name="use_real_aws")
+def fixture_use_real_aws(request):
+    """Indicates whether the 'use_real_aws' option is on or off."""
+    return request.config.getoption("--use-real-aws-may-incur-charges")
+
+
+@pytest.fixture(name='make_stubber')
+def fixture_make_stubber(request, monkeypatch):
     """
-    Test that creating a queue with an associated dead-letter queue results in
-    the source queue being listed in the dead-letter queue's source queue list.
+    Return a factory function that makes an object configured either
+    to pass calls through to AWS or to use stubs.
 
-    A dead-letter queue is any queue that is designated as a dead-letter target
-    by another queue's redrive policy.
+    :param request: An object that contains configuration parameters.
+    :param monkeypatch: The Pytest monkeypatch object.
+    :return: A factory function that makes the stubber object.
     """
-    sqs_stubber = make_stubber(queue_wrapper.sqs.meta.client)
-    dl_queue_name = make_unique_name('queue') + '_my_lost_messages'
-    dl_url = 'url-' + dl_queue_name
-    queue_name = make_unique_name('queue')
-    url = 'url-' + queue_name
+    def _make_stubber(service_client):
+        """
+        Create a class that wraps the botocore Stubber and implements a variety of
+        stub functions that can be used in unit tests for the specified service client.
 
-    # Create a dead-letter queue.
-    sqs_stubber.stub_create_queue(dl_queue_name, {}, dl_url)
-    dl_queue = queue_wrapper.create_queue(dl_queue_name)
+        After tests complete, the stubber checks that no more responses remain in its
+        queue. This lets tests verify that all expected calls were actually made during
+        the test.
 
-    sqs_stubber.stub_get_queue_attributes(dl_url, 'arn:' + dl_queue_name)
+        When tests are run against an actual AWS account, the stubber does not
+        set up stubs and passes all calls through to the Boto 3 client.
 
-    # Create the source queue that sends dead-letter messages to the dead-letter queue.
-    # The redrive policy must be in JSON format. Note that its attribute names
-    # start with lowercase letters.
-    redrive_attributes = {
-        'RedrivePolicy': json.dumps({
-            'deadLetterTargetArn': dl_queue.attributes['QueueArn'],
-            'maxReceiveCount': str(5)
+        :param service_client: The Boto 3 service client to stub.
+        :return: The stubber object, configured either for actual AWS or for stubbing.
+        """
+        fact = stubber_factory(service_client.meta.service_model.service_name)
+        stubber = fact(
+            service_client,
+            not request.config.getoption("--use-real-aws-may-incur-charges")
+        )
+
+        if stubber.use_stubs:
+            def fin():
+                stubber.assert_no_pending_responses()
+                stubber.deactivate()
+            request.addfinalizer(fin)
+            stubber.activate()
+
+        return stubber
+
+    return _make_stubber
+
+
+@pytest.fixture(name='make_unique_name')
+def fixture_make_unique_name():
+    """
+    Return a factory function that can be used to create a unique name.
+
+    :return: The function to create a unique name.
+    """
+    def _make_unique_name(prefix):
+        """
+        Creates a unique name based on a prefix and the current time in nanoseconds.
+
+        :return: A unique name that can be used to create something, such as
+                 an Amazon S3 bucket.
+        """
+        return f"{prefix}{time.time_ns()}"
+    return _make_unique_name
+
+
+@pytest.fixture(name='make_bucket')
+def fixture_make_bucket(request, make_unique_name):
+    """
+    Return a factory function that can be used to make a bucket for testing.
+
+    :param request: The Pytest request object that contains configuration data.
+    :param make_unique_name: A function that creates a unique name.
+    :return: The factory function to make a test bucket.
+    """
+    def _make_bucket(s3_stubber, s3_resource, region_name=None):
+        """
+        Make a bucket that can be used for testing. When stubbing is used, a stubbed
+        bucket is created. When AWS services are used, the bucket is deleted after
+        the test completes.
+
+        :param s3_stub: The S3Stubber object, configured for stubbing or AWS.
+        :param region_name: The AWS Region in which to create the bucket.
+        :return: The test bucket.
+        """
+        bucket_name = make_unique_name('bucket')
+        if not region_name:
+            region_name = s3_resource.meta.client.meta.region_name
+        s3_stubber.stub_create_bucket(bucket_name, region_name)
+
+        bucket = s3_resource.create_bucket(
+            Bucket=bucket_name,
+            CreateBucketConfiguration={
+                'LocationConstraint': region_name
+            }
+        )
+
+        def fin():
+            if not s3_stubber.use_stubs:
+                bucket.delete()
+        request.addfinalizer(fin)
+
+        return bucket
+
+    return _make_bucket
+
+
+class StubRunner:
+    """
+    Adds stubbed responses until a specified method name is encountered.
+    Stubbers and stub functions can be added from any stubber. The error code
+    is automatically added to the specified method.
+    """
+    def __init__(self, error_code, stop_on_method):
+        self.stubs = []
+        self.error_code = error_code
+        self.stop_on_method = stop_on_method
+
+    def add(self, func, *func_args, keep_going=False, **func_kwargs):
+        """
+        Adds a stubbed function response to the list.
+
+        :param stubber: The stubber that implements the specified function.
+        :param func: The name of the stub function.
+        :param keep_going: When True, continue to process stub responses that follow
+                           this function. Otherwise, stop on this function.
+        :param func_args: The positional arguments of the stub function.
+        :param func_kwargs: The keyword arguments of the stub function.
+        """
+        self.stubs.append({
+            'func': func, 'keep_going': keep_going,
+            'func_args': func_args, 'func_kwargs': func_kwargs
         })
-    }
-    sqs_stubber.stub_create_queue(queue_name, redrive_attributes, url)
-    sqs_stubber.stub_list_dead_letter_source_queues(dl_url, [url])
 
-    queue = queue_wrapper.create_queue(queue_name, redrive_attributes)
-    sources = list(dl_queue.dead_letter_source_queues.all())
-    assert queue in sources
-
-    if not sqs_stubber.use_stubs:
-        queue_wrapper.remove_queue(queue)
-        queue_wrapper.remove_queue(dl_queue)
-
-
-def test_create_queue_bad_name():
-    """Test that creating a queue with invalid characters in the name raises
-    an exception."""
-    with pytest.raises(ClientError):
-        queue_wrapper.create_queue("Queue names cannot contain spaces!")
+    def run(self):
+        """
+        Adds stubbed responses until the specified method is encountered. The
+        specified error code is added to the kwargs for the final method and no
+        more responses are added to the stubbers. When no method is specified, all
+        responses are added and the error code is not used.
+        In this way, flexible tests can be written that both run successfully through
+        all stubbed calls or raise errors and exit early.
+        """
+        for stub in self.stubs:
+            if self.stop_on_method == stub['func'].__name__ and not stub['keep_going']:
+                stub['func_kwargs']['error_code'] = self.error_code
+            stub['func'](*stub['func_args'], **stub['func_kwargs'])
+            if self.stop_on_method == stub['func'].__name__ and not stub['keep_going']:
+                break
 
 
-def test_create_standard_queue_with_fifo_extension(make_unique_name):
-    """Test that creating a standard queue with the '.fifo' extension
-    raises an exception."""
-    with pytest.raises(ClientError):
-        queue_wrapper.create_queue(make_unique_name('queue') + '.fifo')
-
-
-def test_create_fifo_queue_without_extension(make_unique_name):
-    """Test that creating a FIFO queue without the '.fifo' extension
-    raises an exception."""
-    with pytest.raises(ClientError):
-        queue_wrapper.create_queue(
-            make_unique_name('queue'),
-            attributes={'FifoQueue': str(True)})
-
-
-def test_get_queue(make_stubber, make_unique_name):
-    """Test that creating a queue and then getting it by name returns the same queue."""
-    sqs_stubber = make_stubber(queue_wrapper.sqs.meta.client)
-    queue_name = make_unique_name('queue')
-    url = 'url-' + queue_name
-
-    sqs_stubber.stub_create_queue(queue_name, {}, url)
-    sqs_stubber.stub_get_queue_url(queue_name, url)
-
-    created = queue_wrapper.create_queue(queue_name)
-    gotten = queue_wrapper.get_queue(queue_name)
-    assert created == gotten
-
-    if not sqs_stubber.use_stubs:
-        queue_wrapper.remove_queue(created)
-
-
-def test_get_queue_nonexistent(make_stubber, make_unique_name):
-    """Test that getting a nonexistent queue raises an exception."""
-    sqs_stubber = make_stubber(queue_wrapper.sqs.meta.client)
-    queue_name = make_unique_name('queue')
-    url = 'url-' + queue_name
-
-    sqs_stubber.stub_get_queue_url(
-        queue_name, url, error_code='AWS.SimpleQueueService.NonExistentQueue')
-
-    with pytest.raises(ClientError) as exc_info:
-        queue_wrapper.get_queue(queue_name)
-    assert exc_info.value.response['Error']['Code'] == \
-        'AWS.SimpleQueueService.NonExistentQueue'
-
-
-def test_get_queues(make_stubber, make_unique_name):
+@pytest.fixture
+def stub_runner():
     """
-    Test that creating some queues, then retrieving all the queues, returns a list
-    that contains at least all of the newly created queues.
+    Encapsulates the StubRunner in a context manager so its run function is called
+    when the context is exited.
     """
-    sqs_stubber = make_stubber(queue_wrapper.sqs.meta.client)
-    queue_name = make_unique_name('queue')
-
-    created_queues = []
-    for ind in range(1, 4):
-        name = queue_name + str(ind)
-        sqs_stubber.stub_create_queue(name, {}, 'url-' + name)
-        created_queues.append(queue_wrapper.create_queue(name))
-
-    sqs_stubber.stub_list_queues([q.url for q in created_queues])
-
-    # When running against the real AWS service, SQS may not return new queues right
-    # away. Use a simple exponential backoff to retry until it succeeds.
-    retries = 0
-    intersect_queues = []
-    while not intersect_queues and retries <= 5:
-        time.sleep(min(retries * 2, 32))
-        gotten_queues = queue_wrapper.get_queues()
-        intersect_queues = [cq for cq in created_queues if cq in gotten_queues]
-        retries += 1
-
-    assert created_queues == intersect_queues
-
-    if not sqs_stubber.use_stubs:
-        for queue in created_queues:
-            queue_wrapper.remove_queue(queue)
-
-
-def test_get_queues_prefix(make_stubber, make_unique_name):
-    """
-    Test that creating some queues with a unique prefix, then retrieving a list of
-    queues that have that unique prefix, returns a list that contains exactly the
-    newly created queues.
-    """
-    sqs_stubber = make_stubber(queue_wrapper.sqs.meta.client)
-    queue_name = make_unique_name('queue')
-
-    created_queues = []
-    for ind in range(1, 4):
-        name = queue_name + str(ind)
-        sqs_stubber.stub_create_queue(name, {}, 'url-' + name)
-        created_queues.append(queue_wrapper.create_queue(name))
-
-    sqs_stubber.stub_list_queues([q.url for q in created_queues], queue_name)
-
-    gotten_queues = queue_wrapper.get_queues(queue_name)
-    assert created_queues == gotten_queues
-
-    if not sqs_stubber.use_stubs:
-        for queue in created_queues:
-            queue_wrapper.remove_queue(queue)
-
-
-def test_get_queues_expect_none(make_stubber, make_unique_name):
-    """Test that getting queues with a random prefix returns an empty list
-     and doesn't raise an exception."""
-    sqs_stubber = make_stubber(queue_wrapper.sqs.meta.client)
-    queue_name = make_unique_name('queue')
-
-    sqs_stubber.stub_list_queues([], queue_name)
-
-    queues = queue_wrapper.get_queues(queue_name)
-    assert not queues
-
-
-def test_remove_queue(make_stubber, make_unique_name):
-    """Test that creating a queue, deleting it, then trying to get it raises
-     an exception because the queue no longer exists."""
-    sqs_stubber = make_stubber(queue_wrapper.sqs.meta.client)
-    queue_name = make_unique_name('queue')
-    url = 'url-' + queue_name
-
-    sqs_stubber.stub_create_queue(queue_name, {}, url)
-    sqs_stubber.stub_delete_queue(url)
-    sqs_stubber.stub_get_queue_url(
-        queue_name, url, error_code='AWS.SimpleQueueService.NonExistentQueue')
-
-    queue = queue_wrapper.create_queue(queue_name)
-    queue_wrapper.remove_queue(queue)
-    with pytest.raises(ClientError) as exc_info:
-        queue_wrapper.get_queue(queue_name)
-    assert exc_info.value.response['Error']['Code'] == \
-        'AWS.SimpleQueueService.NonExistentQueue'
+    @contextlib.contextmanager
+    def _runner(err, stop):
+        runner = StubRunner(err, stop)
+        yield runner
+        runner.run()
+    return _runner

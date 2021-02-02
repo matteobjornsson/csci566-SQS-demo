@@ -25,26 +25,51 @@ Bonus, if you want to enable copy-paste and haven't already, do that in the Gene
 
 ```bash
 git clone https://github.com/matteobjornsson/csci566-sqs-demo
-
-pip install boto3
 ```
+## Configure AWS Credentials
 
-```bash
-$ curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
-```
+### If you have an education account, do the following:
 
+1. Log into your Vocareum account at https://labs.vocareum.com/
+1. Click on the `Account Details` Button.
+1. Click on the `Show` Button next to `AWS CLI:`
+1. Copy all of the text you see there into `~/.aws/credentials` in your VirtualBox.
+
+### If you have a non-educational account, do the following:
+
+1. Log into your account at https://console.aws.amazon.com/
+1. Click on your name top right corner and then `My Security Credentials`.
+1. Click `Create New Access Key` and follow instructions. 
+1. Create the `~/.aws/credentials` file in your VirtualBox as indicated below but substitute in your real access key and secret key. 
+
+Do the following in your VirtualBox:
 ```bash
 cd ~
 mkdir .aws
-vim credentials
+vim .aws/credentials
 ```
-The `~/.aws/credentials` file should look like the file below:
+Copy paste your credentials such that the `~/.aws/credentials` file looks like the text below:
 ```
 [default]
 aws_access_key_id = YOUR_ACCESS_KEY
 aws_secret_access_key = YOUR_SECRET_KEY
 ```
-Additionally, you will want to configure your 
+Additionally, you will want to configure your region:
+
+```bash
+vim .aws/config
+```
+Which should look like this: 
+```
+[default]
+region = us-east-1
+```
+## Install Python Dependencies
+```bash
+pip install boto3 pytest
+```
+# Test Out That The Existing Code Works
+
+
+
 

@@ -70,6 +70,13 @@ pip install boto3 pytest
 ```
 # Test Out That The Existing Code Works
 
+This should test the basic AWS SQS functionality. 
+
+```bash
+cd ~/Desktop/csci566-sqs-demo/sqs_example_code
+python -m pytest -o log_cli=1 --log-cli-level=INFO test/test_message_wrapper.py
+```
+
 
 
 

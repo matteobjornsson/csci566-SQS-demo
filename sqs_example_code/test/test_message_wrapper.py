@@ -33,7 +33,6 @@ Running the tests
 import pytest
 
 from botocore.exceptions import ClientError
-from botocore.stub import Stubber
 
 import message_wrapper
 

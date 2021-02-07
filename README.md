@@ -1,6 +1,4 @@
-# csci566-SQS-demo
-
-Let's check out Amazon Simple Queue Service using Python. 
+# AWS Simple Queue Service in Python
  
 * General intro via Amazon docs
 
@@ -14,6 +12,15 @@ Let's check out Amazon Simple Queue Service using Python.
 
     * https://github.com/awsdocs/aws-doc-sdk-examples/tree/master/python/example_code/sqs
     * The test suite has some dependencies in the higher level directories, which have been copied to `test/test_tools`.
+
+* For those interested in a stripped down HTTP version of using SQS, check out this article:
+    * https://blog.iron.io/amazon-sqs-simple-queue-service-overview-and-tutorial/
+    
+## Hackathon
+
+1. Set up, test, and run existing python code.
+2. ...
+3. Profit??
 
 
 ## If you haven't already, connect your VirtualBox to the internet. 
@@ -88,7 +95,7 @@ pip install boto3 pytest
 This should test the basic AWS SQS functionality. 
 
 ```bash
-cd ~/Desktop/csci566-sqs-demo/sqs_example_code
+cd ~/Desktop/csci566-sqs-demo/code
 python -m pytest -o log_cli=1 --log-cli-level=INFO test/test_message_wrapper.py
 ```
 

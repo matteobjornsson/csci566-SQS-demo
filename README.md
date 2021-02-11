@@ -6,6 +6,7 @@
 1. Write a consumer for a job queue. 
 1. Implement a group messaging protocol. 
 1. If we still have time, change the plumbing on the secure comms hackathon to use SQS queues. 
+1. [A great podcast](https://podcasts.apple.com/us/podcast/sqs-sns-and-kinesis/id1507582049?i=1000475787493) that is a short and sweet overview of SQS, SNS, and Kinesis. 
 
 
 # Environment

@@ -78,19 +78,24 @@ Which should look like this:
 region = us-east-1
 ```
 ## Install Python Dependencies
-This assumes you are working on the Virtual machine which defaults `python` and `pip` to python3.8. You should use `python3` or `pip3` if trying this out outside the VM. 
+This code uses python3, which is installed on the virtual machine. 
+
 ```bash
-$ pip install boto3 pytest
+$ pip3 install boto3 pytest
 ```
 # Test Out That The Existing Code Works
 
-This should test the basic AWS SQS credential and SDK functionality. 
+This should test the basic AWS SQS credential and SDK functionality. A properly functioning environment and credentials will create a queue, send something like 200 messages and recieve them. 
 
 ```bash
 $ cd ~/WHEREVER_YOU_PUT_THE_REPO/csci566-sqs-demo/code
-$ python -m pytest -o log_cli=1 --log-cli-level=INFO test/test_message_wrapper.py
+$ python3 message_wrapper.py
 ```
-"The '-o log_cli=1 --log-cli-level=INFO' flags configure pytest to output logs to stdout during the test run. Without them, pytest captures logs and prints them only when the test fails." (quoted from [this file](https://github.com/awsdocs/aws-doc-sdk-examples/blob/master/python/example_code/sqs/test/test_message_wrapper.py))
+note from amazon: 
+
+>Amazon SQS Free Tier*
+>
+>You can get started with Amazon SQS for free. All customers can make 1 million Amazon SQS requests for free each month. 
 # Extra Links and Docs
 
 * General intro via Amazon docs

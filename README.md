@@ -33,6 +33,10 @@ $ git remote -v
 > upstream  https://github.com/matteobjornsson/csci566-sqs-demo.git (fetch)
 > upstream  https://github.com/matteobjornsson/csci566-sqs-demo.git (push)
 ```
+You would then pull any updates from this repo into yours via
+```bash
+$ git pull upstream main
+```
 ## Configure AWS Credentials
 
 ### If you have an education account, do the following:

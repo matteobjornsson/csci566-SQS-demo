@@ -2,9 +2,10 @@
  
 # Hackathon
 
-1. Set up, test, and run existing python code.
-2. ...
-3. Profit??
+1. Set up environment and credentials, and run existing code.
+1. Write a consumer for a job queue. 
+1. Implement a group messaging protocol. 
+1. If we still have time, change the plumbing on the secure comms hackathon to use SQS queues. 
 
 
 # Environment
@@ -41,7 +42,7 @@ $ git pull upstream main
 
 ### If you have an education account, do the following:
 
-(If you need help setting up an account, use [this guide](https://github.com/matteobjornsson/csci566-sqs-demo/blob/main/awsEducate.md)
+(If you need help setting up an account, use [this guide](https://github.com/matteobjornsson/csci566-sqs-demo/blob/main/awsEducate.md))
 
 1. Log into your Vocareum account at https://labs.vocareum.com/
 1. Click on the `Account Details` Button.

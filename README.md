@@ -91,6 +91,37 @@ This should test the basic AWS SQS credential and SDK functionality. A properly 
 $ cd ~/WHEREVER_YOU_PUT_THE_REPO/csci566-sqs-demo/code
 $ python3 message_wrapper.py
 ```
+Success looks like this: 
+```
+> Running the usage demonstration uses your default AWS account credentials and might incur charges on your account. Do you want to continue (y/n)? y
+> Starting the usage demo. Enjoy!
+> Sending file lines in batches of 10 as messages.
+> ............................Done. Sent 277 messages.
+> Receiving, handling, and deleting messages in batches of 10.
+> ................................Done.
+> Successfully reassembled all file lines!
+```
+
+Failure looks like this: 
+```
+> Running the usage demonstration uses your default AWS account credentials and might incur charges on your account. Do you want to continue (y/n)? y
+> Starting the usage demo. Enjoy!
+> Couldn't create queue named 'sqs-usage-demo-message-wrapper'.
+> Traceback (most recent call last):
+  File "/home/csci566/Desktop/csci566-sqs-demo/code/queue_wrapper.py", line 61, in create_queue
+    queue = sqs.create_queue(
+  File "/home/csci566/.local/lib/python3.8/site-packages/boto3/resources/factory.py", line 520, in do_action
+    response = action(self, *args, **kwargs)
+  File "/home/csci566/.local/lib/python3.8/site-packages/boto3/resources/action.py", line 83, in __call__
+    response = getattr(parent.meta.client, operation_name)(*args, **params)
+  File "/home/csci566/.local/lib/python3.8/site-packages/botocore/client.py", line 357, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+  File "/home/csci566/.local/lib/python3.8/site-packages/botocore/client.py", line 676, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.exceptions.ClientError: An error occurred (SignatureDoesNotMatch) when calling the CreateQueue operation: The request signature we calculated does not match the signature you provided. Check your AWS Secret Access Key and signing method. Consult the service documentation for details.
+
+... etc
+```
 note from amazon: 
 
 >Amazon SQS Free Tier*

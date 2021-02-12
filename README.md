@@ -33,7 +33,9 @@
 1. Write a client that sends string messages to said topic:
     * `arn:aws:sns:us-east-1:622058021374:csci566_group_messaging`
 
-    If done correctly, all queues registered will recieve your messages. 
+    * If done correctly, all queues registered will recieve your messages. 
+    * If we were all really feeling it, we could also implement an ACK system for reliable group messaging. 
+    
 
 1. If we still have time, change the plumbing on the secure comms hackathon to use SQS queues. 
 

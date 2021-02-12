@@ -181,3 +181,6 @@ note from amazon:
 
 *  A great podcast that is a short and sweet overview of SQS, SNS, and Kinesis. 
     * https://podcasts.apple.com/us/podcast/sqs-sns-and-kinesis/id1507582049?i=1000475787493
+
+* Short Presentation
+    * https://docs.google.com/presentation/d/1ENGI6jQ5hUadtPO1hYAjs_I3CH6WuTn07FFrB_EVbDk/edit?usp=sharing

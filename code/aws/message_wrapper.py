@@ -41,7 +41,7 @@ import sys
 import boto3
 from botocore.exceptions import ClientError
 
-import aws.queue_wrapper as queue_wrapper
+import queue_wrapper
 
 logger = logging.getLogger(__name__)
 sqs = boto3.resource('sqs')

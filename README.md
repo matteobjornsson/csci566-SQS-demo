@@ -7,7 +7,7 @@
 1. Write a consumer for a job queue that pulls jobs from the queue below and "processes" them (put some delay between checks for messages and just pull one at a time so everyone can pull messages).
     * The job queue: https://sqs.us-east-1.amazonaws.com/622058021374/csci566_jobs
 
-1. Create your own queue (either programmatically in python or in the online console). Send the queue `arn` as a string to the following SQS url to register your queue with the topic:
+1. Create your own queue (either programmatically in python or in the online console). Send the queue `arn` identifier as a string to the following SQS url to register your queue (I will be running a process that will wait for messages and register the queues to the topic):
     * `https://sqs.us-east-1.amazonaws.com/622058021374/subscribe_to_csci566`
 
 1. Change your policy settings in your personal queue by adding the following JSON to your queue policy within the "Statements" list: 

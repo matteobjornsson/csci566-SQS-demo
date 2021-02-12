@@ -11,5 +11,5 @@ from botocore.exceptions import ClientError
 sqs = boto3.resource('sqs')
 # Here we use the resource to make a queue object from an existing queue URL.
 # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html#SQS.Queue
-queue = sqs.Queue('https://sqs.us-east-1.amazonaws.com/622058021374/csci566')
+queue = sqs.Queue('https://sqs.us-east-1.amazonaws.com/622058021374/csci566_jobs')
 

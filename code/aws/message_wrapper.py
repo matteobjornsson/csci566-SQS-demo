@@ -225,6 +225,7 @@ def usage_demo():
 
     with open(__file__) as file:
         lines = file.readlines()
+        lines = lines[0:20]
 
     line = 0
     batch_size = 10

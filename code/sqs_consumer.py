@@ -1,6 +1,5 @@
 import boto3
 import json
-import aws.message_wrapper as message_wrapper
 from botocore.exceptions import ClientError
 
 sqs = boto3.resource('sqs')

@@ -8,6 +8,8 @@
     * The job queue: https://sqs.us-east-1.amazonaws.com/622058021374/csci566_jobs
     * Examples for everything we are doing in python: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/sqs-examples.html
 
+    ![](img/jobConsumer.png)
+
 1. Create your own queue (either programmatically in python or in the online console). Send the queue `arn` identifier as a string to the following SQS url to register your queue (I will be running a process that will wait for messages and register the queues to the topic):
     * `https://sqs.us-east-1.amazonaws.com/622058021374/subscribe_to_csci566`
 
@@ -35,6 +37,10 @@
 
     * If done correctly, all queues registered will recieve your messages. 
     * If we were all really feeling it, we could also implement an ACK system for reliable group messaging. 
+    * Here is a diagram illustrating the overall flow: 
+    ![](img/csci566Topic.png)
+    * The parts circled in red are what you are implementing:
+    ![](img/yourResponsibility.png)
     
 
 1. If we still have time, change the plumbing on the secure comms hackathon to use SQS queues. 

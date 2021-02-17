@@ -2,12 +2,48 @@
  
 # Hackathon
 
-1. Set up environment and credentials, and run existing code.
-1. Write a consumer for a job queue. 
-1. Implement a group messaging protocol. 
-1. If we still have time, change the plumbing on the secure comms hackathon to use SQS queues. 
-1. [A great podcast](https://podcasts.apple.com/us/podcast/sqs-sns-and-kinesis/id1507582049?i=1000475787493) that is a short and sweet overview of SQS, SNS, and Kinesis. 
+1. Set up environment and credentials, and run existing `message_wrapper.py` file to test that everything is working. 
 
+1. Write a consumer for a job queue that pulls jobs from the queue below and "processes" them (put some delay between checks for messages and just pull one at a time so everyone can pull messages).
+    * The job queue: https://sqs.us-east-1.amazonaws.com/622058021374/csci566_jobs
+    * Examples for everything we are doing in python: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/sqs-examples.html
+
+    ![](img/jobConsumer.png)
+
+1. Create your own queue (either programmatically in python or in the online console). Send the queue `arn` identifier as a string to the following SQS url to register your queue (I will be running a process that will wait for messages and register the queues to the topic):
+    * `https://sqs.us-east-1.amazonaws.com/622058021374/subscribe_to_csci566`
+
+1. Change your policy settings in your personal queue by adding the following JSON to your queue policy within the "Statements" list: 
+
+    ```json
+    {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "sns.amazonaws.com"
+        },
+        "Action": "sqs:SendMessage",
+        "Resource": "arn:aws:sqs:us-east-1:123456789012:YOUR_QUEUE",
+        "Condition": {
+          "ArnEquals": {
+            "aws:SourceArn": "arn:aws:sns:us-east-1:622058021374:csci566_group_messaging"
+          }
+        }
+      }
+    ```
+    This allows your queue to be sent messages from the topic. You will recieve a "confirmation" message on your personal queue you created. Poll for messages on your queue in your online console to find the "confirm subscripiton" URL. Visit that URL with your browser to confirm your subscription. 
+
+1. Write a client that sends string messages to said topic:
+    * `arn:aws:sns:us-east-1:622058021374:csci566_group_messaging`
+
+    * If done correctly, all queues registered will recieve your messages. 
+    * If we were all really feeling it, we could also implement an ACK system for reliable group messaging. 
+    * Here is a diagram illustrating the overall flow: 
+    ![](img/csci566Topic.png)
+    * The parts circled in red are what you are implementing:
+    ![](img/yourResponsibility.png)
+    
+
+1. If we still have time, change the plumbing on the secure comms hackathon to use SQS queues. 
 
 # Environment
 Basic: (Don't push to this repo)
@@ -68,6 +104,7 @@ Copy paste your credentials such that the `~/.aws/credentials` file looks like t
 [default]
 aws_access_key_id = YOUR_ACCESS_KEY
 aws_secret_access_key = YOUR_SECRET_KEY
+aws_session_token = YOUR_TOKEN (Only for educate accounts)
 ```
 Additionally, you will want to configure your region:
 
@@ -83,14 +120,14 @@ region = us-east-1
 This code uses python3, which is installed on the virtual machine. 
 
 ```bash
-$ pip3 install boto3 pytest
+$ pip3 install boto3
 ```
 # Test Out That The Existing Code Works
 
 This should test the basic AWS SQS credential and SDK functionality. A properly functioning environment and credentials will create a queue, send something like 200 messages and recieve them. 
 
 ```bash
-$ cd ~/WHEREVER_YOU_PUT_THE_REPO/csci566-sqs-demo/code
+$ cd /WHEREVER_YOU_PUT_THE_REPO/csci566-sqs-demo/code/aws
 $ python3 message_wrapper.py
 ```
 Success looks like this: 
@@ -148,3 +185,8 @@ note from amazon:
     * https://blog.iron.io/amazon-sqs-simple-queue-service-overview-and-tutorial/
 
 
+*  A great podcast that is a short and sweet overview of SQS, SNS, and Kinesis. 
+    * https://podcasts.apple.com/us/podcast/sqs-sns-and-kinesis/id1507582049?i=1000475787493
+
+* Short Presentation
+    * https://docs.google.com/presentation/d/1ENGI6jQ5hUadtPO1hYAjs_I3CH6WuTn07FFrB_EVbDk/edit?usp=sharing

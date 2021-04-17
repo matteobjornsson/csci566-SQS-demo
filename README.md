@@ -1,17 +1,21 @@
 # AWS Simple Queue Service in Python
 
-This repo represents a small tutorial in the use of AWS Simple Queue Service. This tutorial is intended to be used in a classroom setting with the instructor having set up some of the background programs such as the python scrip that registers new queues that students create. 
+This repo represents a small tutorial in the use of AWS Simple Queue Service. This tutorial is intended to be used in a classroom setting with the instructor having set up some of the background programs such as the python scrip that sends "jobs" to the queue that students are pulling from in Part 1, or registers new queues that students create in Part 2. 
  
 # Hackathon
+### Part 0 - Set up AWS credentials and test them. 
 
-1. Set up environment and credentials, and run existing `message_wrapper.py` file to test that everything is working. 
+Set up environment and credentials as described below, and run existing `message_wrapper.py` file to test that everything is working. 
 
-1. Write a consumer for a job queue that pulls jobs from the queue below and "processes" them (put some delay between checks for messages and just pull one at a time so everyone can pull messages).
+### Part 1 - Create a simple job consumer. 
+
+Write a consumer for a job queue that pulls jobs from the queue below and "processes" them (put some delay between checks for messages and just pull one at a time so everyone can pull messages).
     * The job queue: https://sqs.us-east-1.amazonaws.com/622058021374/csci566_jobs
     * Examples for everything we are doing in python: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/sqs-examples.html
 
     ![](img/jobConsumer.png)
 
+### Part 2 - Plug into a bigger system. 
 1. Create your own queue (either programmatically in python or in the online console). Send the queue `arn` identifier as a string to the following SQS url to register your queue (I will be running a process that will wait for messages and register the queues to the topic):
     * `https://sqs.us-east-1.amazonaws.com/622058021374/subscribe_to_csci566`
 

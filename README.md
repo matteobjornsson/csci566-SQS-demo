@@ -1,4 +1,6 @@
 # AWS Simple Queue Service in Python
+
+This repo represents a small tutorial in the use of AWS Simple Queue Service. This tutorial is intended to be used in a classroom setting with the instructor having set up some of the background programs such as the python scrip that registers new queues that students create. 
  
 # Hackathon
 
@@ -22,7 +24,7 @@
           "Service": "sns.amazonaws.com"
         },
         "Action": "sqs:SendMessage",
-        "Resource": "arn:aws:sqs:us-east-1:123456789012:YOUR_QUEUE",
+        "Resource": "arn:aws:sqs:us-east-1:CHANGETHISNUMBER:YOUR_QUEUE",
         "Condition": {
           "ArnEquals": {
             "aws:SourceArn": "arn:aws:sns:us-east-1:622058021374:csci566_group_messaging"

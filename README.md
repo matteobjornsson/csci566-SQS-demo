@@ -1,6 +1,6 @@
 # AWS Simple Queue Service in Python
 
-This repo represents a small tutorial in the use of AWS Simple Queue Service. This tutorial is intended to be used in a classroom setting with the instructor having set up some of the background programs such as the python scrip that sends "jobs" to the queue that students are pulling from in Part 1, or registers new queues that students create in Part 2. 
+This repo represents a small tutorial in the use of AWS Simple Queue Service. This tutorial is intended to be used in a classroom setting with the instructor having set up some of the background programs such as the python script that sends "jobs" to the queue that students are pulling from in Part 1, or registers new queues that students create in Part 2. 
  
 # Hackathon
 ### Part 0 - Set up AWS credentials and test them. 

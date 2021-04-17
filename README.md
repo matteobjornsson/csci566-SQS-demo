@@ -10,8 +10,8 @@ Set up environment and credentials as described below, and run existing `message
 ### Part 1 - Create a simple job consumer. 
 
 Write a consumer for a job queue that pulls jobs from the queue below and "processes" them (put some delay between checks for messages and just pull one at a time so everyone can pull messages).
-    * The job queue: https://sqs.us-east-1.amazonaws.com/622058021374/csci566_jobs
-    * Examples for everything we are doing in python: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/sqs-examples.html
+* The job queue: https://sqs.us-east-1.amazonaws.com/622058021374/csci566_jobs
+* Examples for everything we are doing in python: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/sqs-examples.html
 
 ![](img/jobConsumer.png)
 
